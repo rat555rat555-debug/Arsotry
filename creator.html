@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AR Target Creator</title>
+
+  <!-- ใช้สำหรับแปลงภาพเป็น .mind ในเครื่องผู้ใช้ ไม่ต้องใช้โควต้าเว็บแปลง -->
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image.prod.js"></script>
+
+  <link rel="stylesheet" href="./style.css" />
+</head>
+
+<body class="creatorPage">
+  <div class="creatorBox">
+    <h1>AR Target Creator</h1>
+    <p class="note">
+      หน้านี้ใช้แปลงภาพโปสเตอร์เป็นไฟล์ <code>poster.mind</code>
+      จากนั้นเอาไฟล์ที่ดาวน์โหลดไปวางในโฟลเดอร์ <code>targets</code> บน GitHub
+    </p>
+
+    <label>เลือกภาพโปสเตอร์</label>
+    <input id="imageInput" type="file" accept="image/*" />
+
+    <button id="compileBtn">แปลงเป็น poster.mind</button>
+
+    <div id="progressBox" class="progress">ยังไม่ได้เริ่ม</div>
+
+    <p class="note">
+      หลังดาวน์โหลดเสร็จ:
+      <br>1. เปลี่ยนชื่อไฟล์เป็น <code>poster.mind</code>
+      <br>2. วางไว้ที่ <code>targets/poster.mind</code>
+      <br>3. วางวิดีโอไว้ที่ <code>videos/video.mp4</code>
+      <br>4. อัปทั้งหมดขึ้น GitHub Pages
+    </p>
+
+    <p><a href="./index.html">กลับไปหน้าแสกน</a></p>
+  </div>
+
+  <script src="./creator.js"></script>
+</body>
+</html>

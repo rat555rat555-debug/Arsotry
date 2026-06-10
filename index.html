@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>AR Poster Scanner</title>
+
+  <!-- A-Frame (เอเฟรม = ตัวทำฉาก 3D บนเว็บ) -->
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+
+  <!-- MindAR (มายด์เออาร์ = ระบบสแกนภาพสำหรับเว็บ AR) -->
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+
+  <link rel="stylesheet" href="./style.css" />
+</head>
+
+<body>
+  <div id="startScreen">
+    <div class="card">
+      <h1>AR Poster Scanner</h1>
+      <p>
+        เว็บสำหรับสแกนโปสเตอร์แล้วแสดงวิดีโอทับบนภาพ
+      </p>
+
+      <button id="startBtn">เริ่มสแกน AR</button>
+
+      <div class="quickLinks">
+        <a href="./creator.html">ไปหน้าแปลงภาพเป็นไฟล์ .mind</a>
+        <a href="./docs/how-to-use.txt">อ่านวิธีใช้</a>
+      </div>
+
+      <p class="small">
+        ต้องเปิดผ่าน HTTPS เช่น GitHub Pages เท่านั้น มือถือถึงจะขอใช้กล้องได้
+      </p>
+    </div>
+  </div>
+
+  <div id="statusBox">พร้อมเริ่มระบบ</div>
+
+  <div id="debugPanel" class="hidden">
+    <b>รายละเอียดปัญหา</b>
+    <pre id="debugText"></pre>
+  </div>
+
+  <a-scene
+    id="arScene"
+    color-space="sRGB"
+    renderer="colorManagement: true, physicallyCorrectLights"
+    vr-mode-ui="enabled: false"
+    device-orientation-permission-ui="enabled: false"
+    embedded>
+
+    <a-assets>
+      <video
+        id="arVideo"
+        preload="auto"
+        loop
+        muted
+        playsinline
+        webkit-playsinline
+        crossorigin="anonymous">
+      </video>
+    </a-assets>
+
+    <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+    <a-entity id="targetEntity" mindar-image-target="targetIndex: 0">
+      <a-video
+        id="videoPlane"
+        src="#arVideo"
+        width="1"
+        height="0.5625"
+        position="0 0 0">
+      </a-video>
+    </a-entity>
+  </a-scene>
+
+  <script src="./config.js"></script>
+  <script src="./scanner.js"></script>
+</body>
+</html>
