@@ -55,6 +55,118 @@ function wait(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+function getCameraBrowserHint() {
+  const ua = navigator.userAgent || "";
+  const isInAppBrowser = /FBAN|FBAV|Instagram|Line|wv\)/i.test(ua);
+
+  if (isInAppBrowser) {
+    return "\n\nถ้าเปิดผ่านแอปแชต/โซเชียล ให้กดเมนู แล้วเลือกเปิดใน Chrome หรือ Samsung Internet โดยตรง";
+  }
+
+  return "\n\nถ้าภาพยังดำ ให้ลองรีเฟรช อนุญาตกล้องใหม่ หรือเปิดด้วย Chrome/Samsung Internet โดยตรง";
+}
+
+function waitForARReady(timeoutMs = 30000) {
+  return new Promise((resolve, reject) => {
+    let finished = false;
+
+    const cleanup = () => {
+      scene.removeEventListener("arReady", onReady);
+      scene.removeEventListener("arError", onError);
+      clearTimeout(timer);
+    };
+
+    const onReady = () => {
+      if (finished) return;
+      finished = true;
+      cleanup();
+      resolve();
+    };
+
+    const onError = (event) => {
+      if (finished) return;
+      finished = true;
+      cleanup();
+      reject(new Error("เปิดกล้องไม่ได้ หรือ browser ไม่รองรับกล้องบนหน้าเว็บนี้" + getCameraBrowserHint()));
+    };
+
+    const timer = setTimeout(() => {
+      if (finished) return;
+      finished = true;
+      cleanup();
+      reject(new Error("เปิดกล้องนานผิดปกติ ระบบ AR ยังไม่พร้อม" + getCameraBrowserHint()));
+    }, timeoutMs);
+
+    scene.addEventListener("arReady", onReady);
+    scene.addEventListener("arError", onError);
+  });
+}
+
+function applyCameraLayerFix(arSystem) {
+  document.body.classList.add("cameraActive");
+
+  const cameraVideo = arSystem && arSystem.video;
+  if (cameraVideo) {
+    cameraVideo.muted = true;
+    cameraVideo.autoplay = true;
+    cameraVideo.playsInline = true;
+    cameraVideo.setAttribute("playsinline", "");
+    cameraVideo.setAttribute("webkit-playsinline", "");
+    cameraVideo.style.zIndex = "0";
+    cameraVideo.style.objectFit = "cover";
+    cameraVideo.style.background = "#000";
+  }
+
+  scene.style.background = "transparent";
+
+  const canvas = scene.canvas || (scene.renderer && scene.renderer.domElement);
+  if (canvas) {
+    canvas.style.background = "transparent";
+  }
+
+  if (scene.renderer) {
+    try {
+      scene.renderer.setClearColor(0x000000, 0);
+      scene.renderer.setClearAlpha(0);
+    } catch (err) {
+      console.warn("ปรับพื้นหลัง canvas ไม่สำเร็จ", err);
+    }
+  }
+}
+
+async function warnIfCameraLooksBlack(arSystem) {
+  await wait(1800);
+
+  const cameraVideo = arSystem && arSystem.video;
+  if (!cameraVideo) return;
+
+  if (!cameraVideo.videoWidth || !cameraVideo.videoHeight || cameraVideo.readyState < 2) {
+    showDebug("กล้องเปิดแล้ว แต่ browser ยังไม่ส่งภาพเข้าหน้าเว็บ" + getCameraBrowserHint());
+    return;
+  }
+
+  try {
+    const sampleCanvas = document.createElement("canvas");
+    sampleCanvas.width = 24;
+    sampleCanvas.height = 24;
+    const ctx = sampleCanvas.getContext("2d", { willReadFrequently: true });
+    ctx.drawImage(cameraVideo, 0, 0, sampleCanvas.width, sampleCanvas.height);
+
+    const pixels = ctx.getImageData(0, 0, sampleCanvas.width, sampleCanvas.height).data;
+    let total = 0;
+    for (let i = 0; i < pixels.length; i += 4) {
+      total += pixels[i] + pixels[i + 1] + pixels[i + 2];
+    }
+
+    const average = total / (sampleCanvas.width * sampleCanvas.height * 3);
+    if (average < 4) {
+      showDebug("ระบบได้รับภาพกล้องมืดมาก ถ้าจอจริงยังดำ ให้ลองเปิดลิงก์นี้ใน Chrome หรือ Samsung Internet โดยตรง และเช็กว่าไม่ได้ปิด/บังเลนส์กล้อง" + getCameraBrowserHint());
+    }
+  } catch (err) {
+    console.warn("ตรวจภาพกล้องไม่ได้", err);
+  }
+}
+
 async function waitForMindARSystem() {
   for (let i = 0; i < 60; i++) {
     if (scene.systems && scene.systems["mindar-image-system"]) {
@@ -130,6 +242,7 @@ async function startAR() {
 
     setStatus("กำลังเตรียมกล้อง...");
     startScreen.style.display = "none";
+    document.body.classList.add("cameraActive");
 
     // มือถือหลายรุ่นต้องให้ผู้ใช้แตะก่อน วิดีโอถึงจะเล่นได้
     video.muted = true;
@@ -143,11 +256,17 @@ async function startAR() {
     );
 
     const arSystem = await waitForMindARSystem();
-    await arSystem.start();
+    const arReady = waitForARReady();
+    arSystem.start();
+    applyCameraLayerFix(arSystem);
+    await arReady;
+    applyCameraLayerFix(arSystem);
 
     setStatus("เปิดกล้องแล้ว: นำกล้องไปส่องโปสเตอร์");
+    warnIfCameraLooksBlack(arSystem);
   } catch (err) {
     console.error(err);
+    document.body.classList.remove("cameraActive");
     startScreen.style.display = "flex";
     startBtn.disabled = false;
     setStatus("เริ่มระบบไม่ได้");

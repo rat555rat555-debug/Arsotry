@@ -6,6 +6,16 @@ html, body {
   background: #101010;
 }
 
+body.cameraActive {
+  background: #000;
+}
+
+body.cameraActive > video:not(#arVideo) {
+  z-index: 0 !important;
+  object-fit: cover;
+  background: #000;
+}
+
 #startScreen {
   position: fixed;
   inset: 0;
@@ -115,8 +125,16 @@ button:disabled {
 }
 
 a-scene {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
   width: 100vw;
   height: 100vh;
+  background: transparent !important;
+}
+
+a-scene canvas {
+  background: transparent !important;
 }
 
 .creatorPage {
