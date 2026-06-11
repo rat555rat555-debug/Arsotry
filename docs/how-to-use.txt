@@ -9,26 +9,32 @@
 3. เปิดหน้า creator.html
    https://ชื่อผู้ใช้.github.io/Arsotry/creator.html
 
-4. เลือกภาพโปสเตอร์ แล้วกดแปลงเป็น poster.mind
+4. ถ้าใช้ภาพตัวอย่าง assets/demo_poster.jpg ข้ามไปขั้นตอน 8 ได้เลย
 
-5. อัปโหลด poster.mind ไปที่:
+5. ถ้าใช้โปสเตอร์จริง ให้เลือกภาพโปสเตอร์ แล้วกดแปลงเป็น poster.mind
+
+6. อัปโหลด poster.mind ไปที่:
    targets/poster.mind
 
-6. อัปโหลดวิดีโอไปที่:
+7. อัปโหลดวิดีโอไปที่:
    videos/video.mp4
 
-7. เช็ก config.js:
+8. เช็ก config.js:
    targetFile: "./targets/poster.mind"
    videoFile: "./videos/video.mp4"
 
-8. เปิดหน้า index.html:
+9. เปิดหน้า index.html:
    https://ชื่อผู้ใช้.github.io/Arsotry/index.html
 
-9. กด “เริ่มสแกน AR” แล้วเอากล้องไปส่องโปสเตอร์
+10. กด “เริ่มสแกน AR” แล้วเอากล้องไปส่องโปสเตอร์
 
 เช็กไฟล์:
 - /videos/video.mp4 ต้องเปิดได้
 - /targets/poster.mind ต้องไม่ขึ้น 404
+
+หมายเหตุสำหรับไฟล์ใน repo นี้:
+- มี targets/poster.mind สำหรับภาพตัวอย่าง assets/demo_poster.jpg แล้ว
+- ถ้าเปลี่ยนโปสเตอร์ ต้องสร้าง poster.mind ใหม่จากภาพโปสเตอร์จริง แล้วอัปโหลดทับไฟล์เดิม
 
 หมายเหตุ:
 GitHub Pages มักไม่ให้รายการไฟล์ในโฟลเดอร์ ดังนั้นอย่าพึ่งระบบค้นหาไฟล์อัตโนมัติ ให้กำหนด path ใน config.js ให้ตรงกับไฟล์จริง

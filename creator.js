@@ -1,3 +1,5 @@
+import { Compiler } from "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image.prod.js";
+
 const imageInput = document.querySelector("#imageInput");
 const compileBtn = document.querySelector("#compileBtn");
 const progressBox = document.querySelector("#progressBox");
@@ -32,20 +34,15 @@ compileBtn.addEventListener("click", async () => {
       return;
     }
 
-    if (!window.MINDAR || !window.MINDAR.IMAGE || !window.MINDAR.IMAGE.Compiler) {
-      setProgress("โหลดตัวแปลง MindAR ไม่สำเร็จ ให้เช็คอินเทอร์เน็ตแล้วรีเฟรช");
-      return;
-    }
-
     compileBtn.disabled = true;
     setProgress("กำลังอ่านภาพ...");
 
     const image = await loadImageFromFile(file);
-    const compiler = new window.MINDAR.IMAGE.Compiler();
+    const compiler = new Compiler();
 
     setProgress("กำลังแปลงภาพเป็น target...");
     await compiler.compileImageTargets([image], (progress) => {
-      const percent = Math.round(progress * 100);
+      const percent = Math.round(progress);
       setProgress(`กำลังแปลง: ${percent}%`);
     });
 
