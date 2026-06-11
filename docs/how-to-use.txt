@@ -1,13 +1,34 @@
-ไฟล์นี้คือชุดโฟลเดอร์ที่ขาดสำหรับเว็บ AR
+วิธีใช้งาน AR Poster Web
 
-ให้แตก zip แล้วอัป 4 โฟลเดอร์นี้ขึ้น GitHub:
-- targets
-- videos
-- assets
-- docs
+1. อัปไฟล์ทั้งหมดขึ้น GitHub repo
+   ต้องอัปไฟล์ด้านใน zip ไม่ใช่อัปโฟลเดอร์ Arsotry-main ซ้อนเข้าไป
 
-ไฟล์สำคัญ:
-- targets/poster.mind = ต้องสร้างเองจากภาพโปสเตอร์ด้วยหน้า creator.html
-- videos/video.mp4 = วิดีโอที่จะขึ้นตอนสแกนเจอภาพ
+2. เปิด GitHub Pages
+   Settings → Pages → Branch: main → Folder: /root
 
-ถ้ายังไม่มี poster.mind เว็บจะยังสแกนภาพจริงไม่ได้
+3. เปิดหน้า creator.html
+   https://ชื่อผู้ใช้.github.io/Arsotry/creator.html
+
+4. เลือกภาพโปสเตอร์ แล้วกดแปลงเป็น poster.mind
+
+5. อัปโหลด poster.mind ไปที่:
+   targets/poster.mind
+
+6. อัปโหลดวิดีโอไปที่:
+   videos/video.mp4
+
+7. เช็ก config.js:
+   targetFile: "./targets/poster.mind"
+   videoFile: "./videos/video.mp4"
+
+8. เปิดหน้า index.html:
+   https://ชื่อผู้ใช้.github.io/Arsotry/index.html
+
+9. กด “เริ่มสแกน AR” แล้วเอากล้องไปส่องโปสเตอร์
+
+เช็กไฟล์:
+- /videos/video.mp4 ต้องเปิดได้
+- /targets/poster.mind ต้องไม่ขึ้น 404
+
+หมายเหตุ:
+GitHub Pages มักไม่ให้รายการไฟล์ในโฟลเดอร์ ดังนั้นอย่าพึ่งระบบค้นหาไฟล์อัตโนมัติ ให้กำหนด path ใน config.js ให้ตรงกับไฟล์จริง

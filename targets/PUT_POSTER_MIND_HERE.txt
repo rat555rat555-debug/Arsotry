@@ -1,3 +1,4 @@
 วางไฟล์ poster.mind ในโฟลเดอร์นี้
-ไฟล์ poster.mind ต้องสร้างจากหน้า creator.html ก่อน
-จากนั้นอัปขึ้น GitHub ที่ตำแหน่ง targets/poster.mind
+
+ต้องสร้างจากหน้า creator.html ด้วยภาพโปสเตอร์จริง
+ตำแหน่งสุดท้ายที่ต้องมีคือ targets/poster.mind

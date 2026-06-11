@@ -25,18 +25,30 @@ function hideDebug() {
 }
 
 async function checkFile(path, label) {
-  const res = await fetch(path, {
-    method: "HEAD",
-    cache: "no-store"
-  }).catch(() => null);
-
-  if (!res || !res.ok) {
-    throw new Error(
-      `${label} โหลดไม่ได้\n` +
-      `ตำแหน่งที่ระบบหา: ${path}\n\n` +
-      `ให้เช็คว่าอัปไฟล์ขึ้น GitHub แล้ว และชื่อไฟล์ตรงตัวพิมพ์เล็ก/ใหญ่`
-    );
+  // ใช้ HEAD ก่อน เพราะเบาและไม่ต้องดาวน์โหลดไฟล์เต็ม
+  let headError = null;
+  try {
+    const res = await fetch(path, { method: "HEAD", cache: "no-store" });
+    if (res && res.ok) return true;
+    headError = res ? `${res.status} ${res.statusText}` : "ไม่มี response";
+  } catch (err) {
+    headError = err.message || String(err);
   }
+
+  // fallback สำหรับบาง host ที่ไม่รองรับ HEAD
+  try {
+    const res = await fetch(path, { method: "GET", cache: "no-store" });
+    if (res && res.ok) return true;
+  } catch (err) {
+    // ปล่อยให้ไป throw ข้อความอ่านง่ายด้านล่าง
+  }
+
+  throw new Error(
+    `${label} โหลดไม่ได้\n` +
+    `ตำแหน่งที่ระบบหา: ${path}\n` +
+    `รายละเอียด: ${headError}\n\n` +
+    `ให้เช็คว่าอัปไฟล์ขึ้น GitHub แล้ว และชื่อไฟล์ตรงตัวพิมพ์เล็ก/ใหญ่`
+  );
 }
 
 function wait(ms) {
@@ -44,7 +56,7 @@ function wait(ms) {
 }
 
 async function waitForMindARSystem() {
-  for (let i = 0; i < 40; i++) {
+  for (let i = 0; i < 60; i++) {
     if (scene.systems && scene.systems["mindar-image-system"]) {
       return scene.systems["mindar-image-system"];
     }
@@ -53,46 +65,47 @@ async function waitForMindARSystem() {
   throw new Error("โหลดระบบ MindAR ไม่สำเร็จ อาจเกิดจากอินเทอร์เน็ตโหลด CDN ไม่ได้");
 }
 
-// Find a usable .mind file.
-// Priority order:
-// 1) config.targetFile (string) — use if present and reachable
-// 2) config.targetFiles (array) — try each entry in order
-// 3) default './targets/poster.mind'
-// If none are available, throw an error with a clear instruction.
-async function findMindFile() {
-  // 1) single targetFile
-  if (config.targetFile) {
-    try {
-      await checkFile(config.targetFile, "ไฟล์ .mind (ตาม config.targetFile)");
-      return config.targetFile;
-    } catch (e) {
-      console.warn("config.targetFile ไม่ถูกพบหรือโหลดไม่ได้:", e.message || e);
-    }
+function getMindCandidates() {
+  const list = [];
+
+  if (typeof config.targetFile === "string" && config.targetFile.trim()) {
+    list.push(config.targetFile.trim());
   }
 
-  // 2) targetFiles array
-  if (Array.isArray(config.targetFiles) && config.targetFiles.length > 0) {
-    for (const f of config.targetFiles) {
-      try {
-        await checkFile(f, `ไฟล์ .mind (จาก config.targetFiles: ${f})`);
-        return f;
-      } catch (e) {
-        console.warn(`ไม่สามารถโหลด ${f}:`, e.message || e);
-        // try next
+  if (Array.isArray(config.targetFiles)) {
+    for (const item of config.targetFiles) {
+      if (typeof item === "string" && item.trim()) {
+        list.push(item.trim());
       }
     }
   }
 
-  // 3) fallback to conventional poster.mind
-  try {
-    await checkFile('./targets/poster.mind', 'ไฟล์ .mind (default: ./targets/poster.mind)');
-    return './targets/poster.mind';
-  } catch (e) {
-    // ignored
+  // fallback มาตรฐาน
+  list.push("./targets/poster.mind");
+
+  // ลบตัวซ้ำ
+  return [...new Set(list)];
+}
+
+async function findMindFile() {
+  const candidates = getMindCandidates();
+
+  for (const path of candidates) {
+    try {
+      await checkFile(path, `ไฟล์ .mind`);
+      return path;
+    } catch (err) {
+      console.warn(`โหลดไฟล์ .mind ไม่สำเร็จ: ${path}`, err);
+    }
   }
 
-  // Not found — give a clear instruction for users
-  throw new Error("ไม่พบไฟล์เป้าหมาย กรุณาสร้างไฟล์ .mind จากหน้า creator.html แล้วอัปโหลดไปที่ targets/poster.mind");
+  throw new Error(
+    "ไม่พบไฟล์เป้าหมาย\n\n" +
+    "กรุณาเปิดหน้า creator.html เพื่อสร้างไฟล์ .mind จากภาพโปสเตอร์ " +
+    "แล้วอัปโหลดไปที่ targets/poster.mind\n\n" +
+    "ลิงก์หน้าแปลงภาพ: ./creator.html\n" +
+    "ตำแหน่งที่ต้องมี: ./targets/poster.mind"
+  );
 }
 
 async function startAR() {
@@ -105,19 +118,11 @@ async function startAR() {
       throw new Error("config.js ยังไม่ได้ตั้ง videoFile");
     }
 
-    // หาไฟล์ .mind ที่ใช้งานได้ โดยพึ่งพา config เป็นหลัก
-    const chosen = await findMindFile();
+    const chosenMindFile = await findMindFile();
+    config.targetFile = chosenMindFile;
 
-    setStatus(`ใช้ไฟล์เป้าหมาย: ${chosen}`);
-
-    // อัปเดต runtime config
-    config.targetFile = chosen;
-
-    // ตรวจไฟล์จริง ๆ อีกครั้งก่อนโหลด
-    await checkFile(config.targetFile, "ไฟล์ .mind");
     await checkFile(config.videoFile, "ไฟล์วิดีโอ");
 
-    // ตั้งค่าหน้า AR
     video.src = config.videoFile;
     videoPlane.setAttribute("width", config.videoWidth || 1);
     videoPlane.setAttribute("height", config.videoHeight || 0.5625);
