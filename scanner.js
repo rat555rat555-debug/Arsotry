@@ -129,6 +129,10 @@ function applyCameraLayerFix(arSystem) {
 
   scene.style.background = "transparent";
 
+  if (scene.object3D) {
+    scene.object3D.background = null;
+  }
+
   const canvas = scene.canvas || (scene.renderer && scene.renderer.domElement);
   if (canvas) {
     canvas.style.background = "transparent";
@@ -142,6 +146,25 @@ function applyCameraLayerFix(arSystem) {
       console.warn("ปรับพื้นหลัง canvas ไม่สำเร็จ", err);
     }
   }
+}
+
+function setupMindARSystem(arSystem) {
+  document.querySelectorAll(".mindar-ui-overlay").forEach((element) => {
+    element.remove();
+  });
+
+  arSystem.setup({
+    imageTargetSrc: config.targetFile,
+    maxTrack: config.maxTrack || 1,
+    showStats: false,
+    uiLoading: "yes",
+    uiScanning: "yes",
+    uiError: "yes",
+    missTolerance: config.missTolerance || 5,
+    warmupTolerance: config.warmupTolerance || 5,
+    filterMinCF: config.filterMinCF || 0.0001,
+    filterBeta: config.filterBeta || 0.001
+  });
 }
 
 async function warnIfCameraLooksBlack(arSystem) {
@@ -250,7 +273,11 @@ async function startAR() {
     videoPlane.setAttribute("height", config.videoHeight || 0.5625);
     target.setAttribute("mindar-image-target", `targetIndex: ${config.targetIndex || 0}`);
 
+    const arSystem = await waitForMindARSystem();
+    setupMindARSystem(arSystem);
+
     setStatus("กำลังเตรียมกล้อง...");
+    showDebug("กำลังขอเปิดกล้องและเตรียมระบบ AR...\n\nถ้าหน้านี้ค้างเป็นสีฟ้า ให้รอดูข้อความ error ด้านล่าง หรือรีเฟรชหน้าแล้วกดเริ่มใหม่");
     startScreen.style.display = "none";
     document.body.classList.add("cameraActive");
 
@@ -259,13 +286,6 @@ async function startAR() {
     await video.play().catch(() => {});
     video.pause();
 
-    // ใส่ค่า MindAR หลังตรวจไฟล์ เพื่อป้องกันค้างหมุนตอนหาไฟล์ไม่เจอ
-    scene.setAttribute(
-      "mindar-image",
-      `imageTargetSrc: ${config.targetFile}; autoStart: false; filterMinCF: 0.0001; filterBeta: 0.001; warmupTolerance: 5; missTolerance: 5;`
-    );
-
-    const arSystem = await waitForMindARSystem();
     const arReady = waitForARReady();
     arSystem.start();
     applyCameraLayerFix(arSystem);
@@ -283,6 +303,7 @@ async function startAR() {
       return;
     }
 
+    hideDebug();
     setStatus("เปิดกล้องแล้ว: นำกล้องไปส่องโปสเตอร์");
     warnIfCameraLooksBlack(arSystem);
   } catch (err) {
