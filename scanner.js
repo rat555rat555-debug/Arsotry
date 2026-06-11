@@ -66,14 +66,15 @@ function getCameraBrowserHint() {
   return "\n\nถ้าภาพยังดำ ให้ลองรีเฟรช อนุญาตกล้องใหม่ หรือเปิดด้วย Chrome/Samsung Internet โดยตรง";
 }
 
-function waitForARReady(timeoutMs = 30000) {
+function waitForARReady({ warnAfterMs = 18000, giveUpAfterMs = 120000 } = {}) {
   return new Promise((resolve, reject) => {
     let finished = false;
 
     const cleanup = () => {
       scene.removeEventListener("arReady", onReady);
       scene.removeEventListener("arError", onError);
-      clearTimeout(timer);
+      clearTimeout(warnTimer);
+      clearTimeout(giveUpTimer);
     };
 
     const onReady = () => {
@@ -90,12 +91,21 @@ function waitForARReady(timeoutMs = 30000) {
       reject(new Error("เปิดกล้องไม่ได้ หรือ browser ไม่รองรับกล้องบนหน้าเว็บนี้" + getCameraBrowserHint()));
     };
 
-    const timer = setTimeout(() => {
+    const warnTimer = setTimeout(() => {
+      setStatus("ยังเตรียมกล้องอยู่...");
+      showDebug(
+        "มือถือบางเครื่องใช้เวลานานตอนเริ่มระบบ AR ครั้งแรก\n\n" +
+        "ถ้าค้างเกิน 1-2 นาที ให้รีเฟรชหน้า แล้วอนุญาตกล้องใหม่" +
+        getCameraBrowserHint()
+      );
+    }, warnAfterMs);
+
+    const giveUpTimer = setTimeout(() => {
       if (finished) return;
       finished = true;
       cleanup();
-      reject(new Error("เปิดกล้องนานผิดปกติ ระบบ AR ยังไม่พร้อม" + getCameraBrowserHint()));
-    }, timeoutMs);
+      resolve(false);
+    }, giveUpAfterMs);
 
     scene.addEventListener("arReady", onReady);
     scene.addEventListener("arError", onError);
@@ -259,8 +269,19 @@ async function startAR() {
     const arReady = waitForARReady();
     arSystem.start();
     applyCameraLayerFix(arSystem);
-    await arReady;
+    const ready = await arReady;
     applyCameraLayerFix(arSystem);
+
+    if (!ready) {
+      setStatus("ระบบ AR ยังไม่พร้อม");
+      showDebug(
+        "ระบบใช้เวลานานผิดปกติระหว่างเตรียมกล้อง/AR\n\n" +
+        "ให้ลองรีเฟรชหน้า แล้วกดเริ่มใหม่อีกครั้ง ถ้ายังเป็น ให้เปิดด้วย Chrome หรือ Samsung Internet โดยตรง" +
+        getCameraBrowserHint()
+      );
+      startBtn.disabled = false;
+      return;
+    }
 
     setStatus("เปิดกล้องแล้ว: นำกล้องไปส่องโปสเตอร์");
     warnIfCameraLooksBlack(arSystem);
@@ -275,6 +296,17 @@ async function startAR() {
 }
 
 startBtn.addEventListener("click", startAR);
+
+window.addEventListener("error", (event) => {
+  if (!document.body.classList.contains("cameraActive")) return;
+  showDebug("เกิดข้อผิดพลาดในระบบ AR\n\n" + String(event.message || event.error || "ไม่ทราบสาเหตุ") + getCameraBrowserHint());
+});
+
+window.addEventListener("unhandledrejection", (event) => {
+  if (!document.body.classList.contains("cameraActive")) return;
+  const reason = event.reason && (event.reason.message || event.reason.stack) || event.reason;
+  showDebug("ระบบ AR หยุดระหว่างเตรียมกล้อง\n\n" + String(reason || "ไม่ทราบสาเหตุ") + getCameraBrowserHint());
+});
 
 target.addEventListener("targetFound", async () => {
   setStatus("เจอโปสเตอร์แล้ว: กำลังเล่นวิดีโอ");
